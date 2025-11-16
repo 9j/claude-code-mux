@@ -775,17 +775,30 @@ impl AnthropicProvider for OpenAIProvider {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<Bytes, ProviderError>> + Send>>, ProviderError> {
         use futures::stream::TryStreamExt;
 
-        let url = format!("{}/chat/completions", self.base_url);
+        // Check if this is a Codex model
+        let is_codex = Self::is_codex_model(&request.model);
 
-        // Transform Anthropic request to OpenAI format
-        let openai_request = self.transform_request(&request)?;
+        let (url, request_body) = if is_codex {
+            // Use /v1/responses endpoint for Codex models
+            tracing::debug!("Using /v1/responses endpoint for Codex model (streaming): {}", request.model);
+            let responses_request = self.transform_to_responses_request(&request)?;
+            let body = serde_json::to_value(&responses_request)
+                .map_err(|e| ProviderError::SerializationError(e))?;
+            (format!("{}/responses", self.base_url), body)
+        } else {
+            // Use standard /v1/chat/completions endpoint
+            let openai_request = self.transform_request(&request)?;
+            let body = serde_json::to_value(&openai_request)
+                .map_err(|e| ProviderError::SerializationError(e))?;
+            (format!("{}/chat/completions", self.base_url), body)
+        };
 
         // Send streaming request
         let response = self.client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .json(&openai_request)
+            .json(&request_body)
             .send()
             .await?;
 
