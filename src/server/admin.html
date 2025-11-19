@@ -687,6 +687,24 @@
                                         <input
                                             type="radio"
                                             name="provider_type"
+                                            value="gemini"
+                                            class="peer sr-only"
+                                        />
+                                        <div
+                                            class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-all"
+                                        >
+                                            <div class="text-xl font-bold mb-1">
+                                                Google Gemini
+                                            </div>
+                                            <div class="text-sm text-gray-600">
+                                                Gemini models
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="provider_type"
                                             value="openrouter"
                                             class="peer sr-only"
                                         />
@@ -3466,6 +3484,16 @@
                         <li>Copy the authorization code</li>
                         <li>Paste it in the field below</li>
                     `;
+                } else if (providerType === 'gemini') {
+                    oauthLabel.textContent = 'OAuth (Google AI Pro/Ultra)';
+                    oauthDescription.textContent = 'Free for Google AI Pro/Ultra subscribers';
+                    step1Instruction.textContent = 'Click the button below to authenticate with your Google account (AI Pro/Ultra).';
+                    step2Instructions.innerHTML = `
+                        <li>Log in to your Google account</li>
+                        <li>Click "Allow" to authorize</li>
+                        <li>Copy the authorization code</li>
+                        <li>Paste it in the field below</li>
+                    `;
                 } else {
                     oauthLabel.textContent = 'OAuth (Claude Pro/Max)';
                     oauthDescription.textContent = 'Free for Claude Max subscribers';
@@ -3620,6 +3648,8 @@
 
                     if (providerType === 'openai') {
                         oauth_type = 'openai-codex';
+                    } else if (providerType === 'gemini') {
+                        oauth_type = 'gemini';
                     }
 
                     // Step 1: Get authorization URL
