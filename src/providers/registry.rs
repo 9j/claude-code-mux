@@ -1,4 +1,5 @@
 use super::{AnthropicProvider, ProviderConfig, OpenAIProvider, AnthropicCompatibleProvider, error::ProviderError};
+use super::gemini::GeminiProvider;
 use crate::auth::TokenStore;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -139,6 +140,27 @@ impl ProviderRegistry {
                     api_key,
                     config.models.clone(),
                 )),
+
+                // Google Gemini (supports OAuth, API Key, Vertex AI)
+                "gemini" => {
+                    let api_key_opt = if config.auth_type == super::AuthType::ApiKey {
+                        Some(api_key.clone())
+                    } else {
+                        None
+                    };
+
+                    Box::new(GeminiProvider::new(
+                        config.name.clone(),
+                        api_key_opt,
+                        config.base_url.clone(),
+                        config.models.clone(),
+                        HashMap::new(), // custom headers
+                        config.oauth_provider.clone(),
+                        token_store.clone(),
+                        None, // project_id (for Vertex AI - TODO: add to config)
+                        None, // location (for Vertex AI - TODO: add to config)
+                    ))
+                }
 
                 other => {
                     return Err(ProviderError::ConfigError(

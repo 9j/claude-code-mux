@@ -1,6 +1,7 @@
 pub mod error;
 pub mod openai;
 pub mod anthropic_compatible;
+pub mod gemini;
 pub mod registry;
 pub mod streaming;
 
