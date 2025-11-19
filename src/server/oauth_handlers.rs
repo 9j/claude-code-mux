@@ -80,9 +80,10 @@ pub async fn oauth_authorize(
         "max" => OAuthConfig::anthropic(),
         "console" => OAuthConfig::anthropic_console(),
         "openai-codex" => OAuthConfig::openai_codex(),
+        "gemini" => OAuthConfig::gemini(),
         _ => return Err((
             StatusCode::BAD_REQUEST,
-            "Invalid oauth_type. Must be 'max', 'console', or 'openai-codex'".to_string()
+            "Invalid oauth_type. Must be 'max', 'console', 'openai-codex', or 'gemini'".to_string()
         )),
     };
 
@@ -93,6 +94,7 @@ pub async fn oauth_authorize(
         "max" => "Visit the URL above to authorize with your Claude Pro/Max account. After authorization, you'll receive a code. Paste it in the next step.".to_string(),
         "console" => "Visit the URL above to authorize and create an API key. After authorization, you'll receive a code. Paste it in the next step.".to_string(),
         "openai-codex" => "Visit the URL above to authorize with your ChatGPT Plus/Pro account. After authorization, you'll receive a code. Paste it in the next step.".to_string(),
+        "gemini" => "Visit the URL above to authorize with your Google account (AI Pro/Ultra). After authorization, you'll receive a code. Paste it in the next step.".to_string(),
         _ => String::new(),
     };
 
@@ -112,6 +114,7 @@ pub async fn oauth_exchange(
     let config = if let Some(ref oauth_type) = req.oauth_type {
         match oauth_type.as_str() {
             "openai-codex" => OAuthConfig::openai_codex(),
+            "gemini" => OAuthConfig::gemini(),
             "console" => OAuthConfig::anthropic_console(),
             "max" => OAuthConfig::anthropic(),
             _ => return Err((

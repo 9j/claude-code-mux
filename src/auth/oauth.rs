@@ -210,8 +210,36 @@ impl OAuthClient {
         }
 
         let is_openai_codex = self.config.client_id == "app_EMoamEEZ73f0CkXaXp7hrann";
+        let is_gemini = self.config.client_id.starts_with("681255809395-");
 
-        let response = if is_openai_codex {
+        let response = if is_gemini {
+            // Google OAuth uses form-urlencoded with client_secret
+            tracing::debug!("🔍 Gemini token exchange:");
+            tracing::debug!("  code: {}", auth_code);
+            tracing::debug!("  code_verifier: {}", verifier);
+            tracing::debug!("  redirect_uri: {}", &self.config.redirect_uri);
+            tracing::debug!("  client_id: {}", &self.config.client_id);
+
+            let client_secret = self.config.client_secret.as_ref()
+                .ok_or_else(|| anyhow!("Gemini OAuth requires client_secret"))?;
+
+            let form_params = [
+                ("grant_type", "authorization_code"),
+                ("client_id", &self.config.client_id),
+                ("client_secret", client_secret),
+                ("code", auth_code),
+                ("code_verifier", verifier),
+                ("redirect_uri", &self.config.redirect_uri),
+            ];
+
+            self.http_client
+                .post(&self.config.token_url)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .form(&form_params)
+                .send()
+                .await
+                .context("Failed to exchange code for token")?
+        } else if is_openai_codex {
             // OpenAI uses form-urlencoded and only needs code + code_verifier
             tracing::debug!("🔍 OpenAI token exchange:");
             tracing::debug!("  code: {}", auth_code);
