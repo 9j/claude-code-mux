@@ -110,6 +110,9 @@ pub async fn oauth_exchange(
     State(state): State<Arc<AppState>>,
     Json(req): Json<OAuthExchangeRequest>,
 ) -> Result<Json<OAuthExchangeResponse>, (StatusCode, String)> {
+    tracing::info!("📥 OAuth exchange request: provider_id={}, oauth_type={:?}",
+        req.provider_id, req.oauth_type);
+
     // Determine OAuth config based on oauth_type if provided, otherwise fall back to provider_id
     let config = if let Some(ref oauth_type) = req.oauth_type {
         match oauth_type.as_str() {
@@ -130,16 +133,47 @@ pub async fn oauth_exchange(
         OAuthConfig::anthropic()
     };
 
-    let oauth_client = OAuthClient::new(config, state.token_store.clone());
+    let oauth_client = OAuthClient::new(config.clone(), state.token_store.clone());
 
     // Exchange code for tokens
-    let token = oauth_client
+    let mut token = oauth_client
         .exchange_code(&req.code, &req.verifier, &req.provider_id)
         .await
         .map_err(|e| (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to exchange code: {}", e)
         ))?;
+
+    // For Gemini providers, call loadCodeAssist to get project ID
+    let is_gemini = req.oauth_type.as_deref() == Some("gemini") ||
+                    req.provider_id.to_lowercase().contains("gemini") ||
+                    req.provider_id.to_lowercase().contains("google");
+
+    tracing::info!("🔍 Checking if Gemini provider: is_gemini={}, oauth_type={:?}, provider_id={}",
+        is_gemini, req.oauth_type, req.provider_id);
+
+    if is_gemini {
+        tracing::info!("🔍 Gemini provider detected, calling loadCodeAssist to get project ID");
+
+        match oauth_client.load_code_assist(&token.access_token).await {
+            Ok(project_id) => {
+                tracing::info!("✅ Got project ID from loadCodeAssist: {}", project_id);
+                token.project_id = Some(project_id);
+                // Save updated token with project_id
+                state.token_store.save(token.clone())
+                    .map_err(|e| (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to save token with project_id: {}", e)
+                    ))?;
+            }
+            Err(e) => {
+                tracing::warn!("⚠️ No project ID available: {}", e);
+                tracing::info!("ℹ️  Individual Google accounts don't need project ID.");
+                tracing::info!("ℹ️  Workspace/licensed users: set GOOGLE_CLOUD_PROJECT env var.");
+                // Continue without project_id - it's optional for individual accounts
+            }
+        }
+    }
 
     Ok(Json(OAuthExchangeResponse {
         success: true,
@@ -196,11 +230,14 @@ pub async fn oauth_refresh_token(
     State(state): State<Arc<AppState>>,
     Json(req): Json<DeleteTokenRequest>,
 ) -> Result<Json<OAuthExchangeResponse>, (StatusCode, String)> {
-    // Determine OAuth config based on provider_id (check for OpenAI keywords)
+    // Determine OAuth config based on provider_id
     let config = if req.provider_id.to_lowercase().contains("openai") ||
                      req.provider_id.to_lowercase().contains("codex") ||
                      req.provider_id.to_lowercase().contains("chatgpt") {
         OAuthConfig::openai_codex()
+    } else if req.provider_id.to_lowercase().contains("gemini") ||
+              req.provider_id.to_lowercase().contains("google") {
+        OAuthConfig::gemini()
     } else {
         OAuthConfig::anthropic()
     };

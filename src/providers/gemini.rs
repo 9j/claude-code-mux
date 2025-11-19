@@ -1,5 +1,5 @@
 use super::{AnthropicProvider, ProviderError, ProviderResponse, Usage};
-use crate::auth::TokenStore;
+use crate::auth::{OAuthClient, OAuthConfig, TokenStore};
 use crate::models::{AnthropicRequest, ContentBlock, MessageContent, SystemPrompt};
 use async_trait::async_trait;
 use reqwest::Client;
@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Google Gemini provider supporting three authentication methods:
-/// 1. OAuth 2.0 (Google AI Pro/Ultra)
-/// 2. API Key (Google AI Studio)
-/// 3. Vertex AI (Google Cloud)
+/// 1. OAuth 2.0 (Google AI Pro/Ultra) - Uses Code Assist API
+/// 2. API Key (Google AI Studio) - Uses public Gemini API
+/// 3. Vertex AI (Google Cloud) - Uses Vertex AI API
 pub struct GeminiProvider {
     pub name: String,
     pub api_key: Option<String>,
@@ -17,12 +17,41 @@ pub struct GeminiProvider {
     pub models: Vec<String>,
     pub client: Client,
     pub custom_headers: HashMap<String, String>,
-    // OAuth fields
-    pub oauth_provider_id: Option<String>,
-    pub token_store: Option<TokenStore>,
     // Vertex AI fields
     pub project_id: Option<String>,
     pub location: Option<String>,
+    // OAuth fields
+    pub oauth_provider_id: Option<String>,
+    pub token_store: Option<TokenStore>,
+}
+
+/// Remove JSON Schema metadata fields that Gemini API doesn't support
+fn clean_json_schema(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            // Remove JSON Schema metadata fields
+            map.remove("$schema");
+            map.remove("$id");
+            map.remove("$ref");
+            map.remove("$comment");
+            map.remove("exclusiveMinimum");
+            map.remove("exclusiveMaximum");
+            map.remove("definitions");
+            map.remove("$defs");
+
+            // Recursively clean nested objects
+            for (_, v) in map.iter_mut() {
+                clean_json_schema(v);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            // Recursively clean array elements
+            for item in arr.iter_mut() {
+                clean_json_schema(item);
+            }
+        }
+        _ => {}
+    }
 }
 
 impl GeminiProvider {
@@ -38,14 +67,17 @@ impl GeminiProvider {
         location: Option<String>,
     ) -> Self {
         let base_url = base_url.unwrap_or_else(|| {
-            if project_id.is_some() && location.is_some() {
+            if oauth_provider_id.is_some() {
+                // Code Assist API (OAuth)
+                "https://cloudcode-pa.googleapis.com/v1internal".to_string()
+            } else if project_id.is_some() && location.is_some() {
                 // Vertex AI
                 format!(
                     "https://{}-aiplatform.googleapis.com/v1",
                     location.as_ref().unwrap()
                 )
             } else {
-                // Google AI (OAuth or API Key)
+                // Google AI (API Key)
                 "https://generativelanguage.googleapis.com/v1beta".to_string()
             }
         });
@@ -57,14 +89,14 @@ impl GeminiProvider {
             models,
             client: Client::new(),
             custom_headers,
-            oauth_provider_id,
-            token_store,
             project_id,
             location,
+            oauth_provider_id,
+            token_store,
         }
     }
 
-    /// Check if this provider uses OAuth
+    /// Check if this provider uses OAuth (Code Assist API)
     fn is_oauth(&self) -> bool {
         self.oauth_provider_id.is_some() && self.token_store.is_some()
     }
@@ -74,23 +106,19 @@ impl GeminiProvider {
         self.project_id.is_some() && self.location.is_some()
     }
 
-    /// Get authorization header value (OAuth token or API key)
+    /// Get OAuth bearer token (with automatic refresh)
     async fn get_auth_header(&self) -> Result<Option<String>, ProviderError> {
         if let (Some(oauth_provider_id), Some(token_store)) =
             (&self.oauth_provider_id, &self.token_store)
         {
-            // OAuth: Get and refresh token if needed
             if let Some(token) = token_store.get(oauth_provider_id) {
                 // Check if token needs refresh
                 if token.needs_refresh() {
-                    tracing::info!(
-                        "🔄 Token for '{}' needs refresh, refreshing...",
-                        oauth_provider_id
-                    );
+                    tracing::info!("🔄 Token for '{}' needs refresh, refreshing...", oauth_provider_id);
 
                     // Refresh token
-                    let config = crate::auth::OAuthConfig::gemini();
-                    let oauth_client = crate::auth::OAuthClient::new(config, token_store.clone());
+                    let config = OAuthConfig::gemini();
+                    let oauth_client = OAuthClient::new(config, token_store.clone());
 
                     match oauth_client.refresh_token(oauth_provider_id).await {
                         Ok(new_token) => {
@@ -100,8 +128,7 @@ impl GeminiProvider {
                         Err(e) => {
                             tracing::error!("❌ Failed to refresh token: {}", e);
                             return Err(ProviderError::AuthError(format!(
-                                "Failed to refresh OAuth token: {}",
-                                e
+                                "Failed to refresh OAuth token: {}", e
                             )));
                         }
                     }
@@ -111,17 +138,12 @@ impl GeminiProvider {
                 }
             } else {
                 return Err(ProviderError::AuthError(format!(
-                    "No OAuth token found for provider '{}'",
+                    "OAuth provider '{}' configured but no token found in store",
                     oauth_provider_id
                 )));
             }
-        } else if self.api_key.is_some() {
-            // API Key: Will be added as query parameter, not header
-            Ok(None)
-        } else {
-            // Vertex AI: Uses Application Default Credentials (handled externally)
-            Ok(None)
         }
+        Ok(None)
     }
 
     /// Transform Anthropic request to Gemini format
@@ -217,10 +239,14 @@ impl GeminiProvider {
                 function_declarations: anthropic_tools
                     .iter()
                     .filter_map(|tool| {
+                        let mut parameters = tool.input_schema.clone().unwrap_or_default();
+                        // Clean JSON Schema metadata that Gemini doesn't support
+                        clean_json_schema(&mut parameters);
+
                         Some(GeminiFunctionDeclaration {
                             name: tool.name.as_ref()?.clone(),
                             description: tool.description.clone().unwrap_or_default(),
-                            parameters: tool.input_schema.clone().unwrap_or_default(),
+                            parameters,
                         })
                     })
                     .collect(),
@@ -302,62 +328,160 @@ impl AnthropicProvider for GeminiProvider {
         request: AnthropicRequest,
     ) -> Result<ProviderResponse, ProviderError> {
         let model = request.model.clone();
-        let gemini_request = self.transform_request(&request)?;
 
-        // Build URL
-        let url = if self.is_vertex_ai() {
-            // Vertex AI endpoint
-            format!(
-                "{}/projects/{}/locations/{}/publishers/google/models/{}:generateContent",
-                self.base_url,
-                self.project_id.as_ref().unwrap(),
-                self.location.as_ref().unwrap(),
-                model
-            )
-        } else if self.api_key.is_some() {
-            // API Key endpoint (key in query parameter)
-            format!(
-                "{}/models/{}:generateContent?key={}",
-                self.base_url,
-                model,
-                self.api_key.as_ref().unwrap()
-            )
+        // Check if using OAuth (Code Assist API)
+        if self.is_oauth() {
+            // Use Code Assist API endpoint
+            let gemini_request = self.transform_request(&request)?;
+
+            // Get OAuth bearer token
+            let auth_header = self.get_auth_header().await?;
+            let bearer_token = auth_header.ok_or_else(|| {
+                ProviderError::AuthError("OAuth configured but no token available".to_string())
+            })?;
+
+            // Get project_id from token store
+            let project_id = if let (Some(oauth_provider_id), Some(token_store)) =
+                (&self.oauth_provider_id, &self.token_store) {
+                token_store
+                    .get(oauth_provider_id)
+                    .and_then(|token| token.project_id.clone())
+            } else {
+                None
+            };
+
+            if project_id.is_none() {
+                tracing::warn!("⚠️ No project_id found in token for Gemini OAuth. Code Assist API may fail.");
+            }
+
+            // Generate unique user_prompt_id
+            let user_prompt_id = format!("gemini-{}", chrono::Utc::now().timestamp_millis());
+
+            // Wrap in Code Assist API format
+            let code_assist_request = CodeAssistRequest {
+                model: model.clone(),
+                project: project_id,
+                user_prompt_id: Some(user_prompt_id),
+                request: CodeAssistInnerRequest {
+                    contents: gemini_request.contents,
+                    system_instruction: gemini_request.system_instruction,
+                    generation_config: gemini_request.generation_config,
+                    tools: gemini_request.tools,
+                    session_id: None, // Optional
+                },
+            };
+
+            // Code Assist API endpoint: https://cloudcode-pa.googleapis.com/v1internal:generateContent
+            let url = format!("{}:generateContent", self.base_url);
+
+            tracing::debug!("🔐 Using OAuth Code Assist API: {}", url);
+
+            // Build request
+            let mut req_builder = self.client
+                .post(&url)
+                .header("Content-Type", "application/json")
+                .header("Authorization", bearer_token);
+
+            // Add custom headers
+            for (key, value) in &self.custom_headers {
+                req_builder = req_builder.header(key, value);
+            }
+
+            // Send request
+            let response = req_builder.json(&code_assist_request).send().await?;
+
+            if !response.status().is_success() {
+                let status = response.status().as_u16();
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+
+                // Special handling for 404 errors (model not found)
+                if status == 404 {
+                    let model_name = &model;
+                    let user_friendly_msg = if model_name.contains("gemini-3") || model_name.contains("preview") {
+                        format!(
+                            "Model '{}' is not available. This may be a preview model that requires special access. \
+                            Try using gemini-2.5-pro or gemini-2.0-flash-exp instead. \
+                            Original error: {}",
+                            model_name, error_text
+                        )
+                    } else {
+                        format!("Model '{}' not found. Original error: {}", model_name, error_text)
+                    };
+                    tracing::warn!("⚠️ Model not found (404): {}", user_friendly_msg);
+                    return Err(ProviderError::ApiError {
+                        status,
+                        message: user_friendly_msg,
+                    });
+                }
+
+                tracing::error!("Code Assist API error ({}): {}", status, error_text);
+                return Err(ProviderError::ApiError {
+                    status,
+                    message: error_text,
+                });
+            }
+
+            // Parse Code Assist response
+            let code_assist_response: CodeAssistResponse = response.json().await?;
+            self.transform_response(code_assist_response.response, model)
         } else {
-            // OAuth endpoint
-            format!("{}/models/{}:generateContent", self.base_url, model)
-        };
+            // Use public Gemini API or Vertex AI
+            let gemini_request = self.transform_request(&request)?;
 
-        // Build request
-        let mut req_builder = self.client.post(&url).header("Content-Type", "application/json");
+            // Build URL
+            let url = if self.is_vertex_ai() {
+                // Vertex AI endpoint
+                format!(
+                    "{}/projects/{}/locations/{}/publishers/google/models/{}:generateContent",
+                    self.base_url,
+                    self.project_id.as_ref().unwrap(),
+                    self.location.as_ref().unwrap(),
+                    model
+                )
+            } else if self.api_key.is_some() {
+                // API Key endpoint (key in query parameter)
+                format!(
+                    "{}/models/{}:generateContent?key={}",
+                    self.base_url,
+                    model,
+                    self.api_key.as_ref().unwrap()
+                )
+            } else {
+                return Err(ProviderError::ConfigError(
+                    "Gemini provider requires either api_key, OAuth, or Vertex AI configuration".to_string()
+                ));
+            };
 
-        // Add authorization header for OAuth or Vertex AI
-        if let Some(auth_header) = self.get_auth_header().await? {
-            req_builder = req_builder.header("Authorization", auth_header);
+            // Build request
+            let mut req_builder = self.client.post(&url).header("Content-Type", "application/json");
+
+            // Add custom headers
+            for (key, value) in &self.custom_headers {
+                req_builder = req_builder.header(key, value);
+            }
+
+            // Send request
+            let response = req_builder.json(&gemini_request).send().await?;
+
+            if !response.status().is_success() {
+                let status = response.status().as_u16();
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+                tracing::error!("Gemini API error ({}): {}", status, error_text);
+                return Err(ProviderError::ApiError {
+                    status,
+                    message: error_text,
+                });
+            }
+
+            let gemini_response: GeminiResponse = response.json().await?;
+            self.transform_response(gemini_response, model)
         }
-
-        // Add custom headers
-        for (key, value) in &self.custom_headers {
-            req_builder = req_builder.header(key, value);
-        }
-
-        // Send request
-        let response = req_builder.json(&gemini_request).send().await?;
-
-        if !response.status().is_success() {
-            let status = response.status().as_u16();
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            tracing::error!("Gemini API error ({}): {}", status, error_text);
-            return Err(ProviderError::ApiError {
-                status,
-                message: error_text,
-            });
-        }
-
-        let gemini_response: GeminiResponse = response.json().await?;
-        self.transform_response(gemini_response, model)
     }
 
     async fn send_message_stream(
@@ -474,4 +598,38 @@ struct GeminiUsageMetadata {
     prompt_token_count: Option<i32>,
     candidates_token_count: Option<i32>,
     total_token_count: Option<i32>,
+}
+
+// Code Assist API structures (for OAuth)
+
+#[derive(Debug, Serialize)]
+struct CodeAssistRequest {
+    model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    project: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    user_prompt_id: Option<String>,
+    request: CodeAssistInnerRequest,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CodeAssistInnerRequest {
+    contents: Vec<GeminiContent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system_instruction: Option<GeminiSystemInstruction>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    generation_config: Option<GeminiGenerationConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<GeminiTool>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    session_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CodeAssistResponse {
+    response: GeminiResponse,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    trace_id: Option<String>,
 }

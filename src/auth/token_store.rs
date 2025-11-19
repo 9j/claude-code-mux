@@ -20,6 +20,9 @@ pub struct OAuthToken {
     /// Optional enterprise URL for GitHub Copilot Enterprise
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enterprise_url: Option<String>,
+    /// Optional Google Cloud project ID for Gemini Code Assist API
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
 }
 
 impl OAuthToken {
@@ -167,6 +170,7 @@ mod tests {
             refresh_token: "refresh-456".to_string(),
             expires_at: Utc::now() + chrono::Duration::hours(1),
             enterprise_url: None,
+            project_id: None,
         };
 
         store.save(token.clone()).unwrap();
@@ -187,6 +191,7 @@ mod tests {
             refresh_token: "refresh".to_string(),
             expires_at: Utc::now() - chrono::Duration::hours(1),
             enterprise_url: None,
+            project_id: None,
         };
 
         assert!(expired_token.is_expired());
@@ -198,6 +203,7 @@ mod tests {
             refresh_token: "refresh".to_string(),
             expires_at: Utc::now() + chrono::Duration::hours(1),
             enterprise_url: None,
+            project_id: None,
         };
 
         assert!(!valid_token.is_expired());

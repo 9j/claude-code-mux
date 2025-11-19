@@ -157,8 +157,24 @@ impl ProviderRegistry {
                         HashMap::new(), // custom headers
                         config.oauth_provider.clone(),
                         token_store.clone(),
-                        None, // project_id (for Vertex AI - TODO: add to config)
-                        None, // location (for Vertex AI - TODO: add to config)
+                        None, // No project_id/location for Gemini (AI Studio/OAuth only)
+                        None,
+                    ))
+                }
+
+                "vertex-ai" => {
+                    // Vertex AI provider (separate from Gemini)
+                    // Uses Google Cloud Vertex AI with ADC authentication
+                    Box::new(GeminiProvider::new(
+                        config.name.clone(),
+                        None, // No API key for Vertex AI (uses ADC)
+                        config.base_url.clone(),
+                        config.models.clone(),
+                        HashMap::new(), // custom headers
+                        None, // No OAuth for Vertex AI
+                        token_store.clone(),
+                        config.project_id.clone(), // GCP project ID
+                        config.location.clone(),   // GCP location
                     ))
                 }
 

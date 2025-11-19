@@ -322,6 +322,7 @@ impl OAuthClient {
             refresh_token: token_response.refresh_token,
             expires_at,
             enterprise_url: None,
+            project_id: None,  // Will be set by loadCodeAssist for Gemini
         };
 
         // Save token
@@ -400,12 +401,95 @@ impl OAuthClient {
             refresh_token: token_response.refresh_token,
             expires_at,
             enterprise_url: existing_token.enterprise_url,
+            project_id: existing_token.project_id,  // Preserve project_id from existing token
         };
 
         // Save refreshed token
         self.token_store.save(token.clone())?;
 
         Ok(token)
+    }
+
+    /// Load Code Assist for Gemini and get project ID
+    /// This must be called after OAuth exchange for Gemini providers
+    pub async fn load_code_assist(&self, access_token: &str) -> Result<String> {
+        #[derive(Serialize)]
+        struct LoadCodeAssistRequest {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            cloudaicompanionProject: Option<String>,
+            metadata: ClientMetadata,
+        }
+
+        #[derive(Serialize)]
+        struct ClientMetadata {
+            ideType: String,
+            platform: String,
+            pluginType: String,
+        }
+
+        #[derive(Deserialize)]
+        struct LoadCodeAssistResponse {
+            #[serde(rename = "cloudaicompanionProject")]
+            cloudaicompanion_project: Option<String>,
+        }
+
+        // Try to get project ID from environment variables (like gemini-cli does)
+        let project_id = std::env::var("GOOGLE_CLOUD_PROJECT")
+            .or_else(|_| std::env::var("GOOGLE_CLOUD_PROJECT_ID"))
+            .ok();
+
+        if let Some(ref pid) = project_id {
+            tracing::info!("🔍 Using project ID from environment: {}", pid);
+        } else {
+            tracing::warn!("⚠️ No GOOGLE_CLOUD_PROJECT env var set. loadCodeAssist may not return project ID.");
+        }
+
+        let request = LoadCodeAssistRequest {
+            cloudaicompanionProject: project_id.clone(),
+            metadata: ClientMetadata {
+                ideType: "IDE_UNSPECIFIED".to_string(),
+                platform: "PLATFORM_UNSPECIFIED".to_string(),
+                pluginType: "GEMINI".to_string(),
+            },
+        };
+
+        tracing::debug!("🔍 Calling loadCodeAssist with project_id={:?}", project_id);
+
+        let response = self.http_client
+            .post("https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist")
+            .header("Authorization", format!("Bearer {}", access_token))
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .send()
+            .await
+            .context("Failed to call loadCodeAssist")?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            tracing::error!("❌ loadCodeAssist API error {}: {}", status, body);
+            return Err(anyhow!("loadCodeAssist failed: {} - {}", status, body));
+        }
+
+        // Get response text first for debugging
+        let response_text = response.text().await
+            .context("Failed to read loadCodeAssist response")?;
+
+        tracing::debug!("📥 loadCodeAssist API response: {}", response_text);
+
+        let load_response: LoadCodeAssistResponse = serde_json::from_str(&response_text)
+            .context("Failed to parse loadCodeAssist response")?;
+
+        tracing::debug!("🔍 Parsed loadCodeAssist response: cloudaicompanion_project={:?}", load_response.cloudaicompanion_project);
+
+        // If loadCodeAssist returned a project ID, use it
+        // Otherwise, use the one we sent (from environment variables)
+        // This matches gemini-cli behavior
+        let final_project_id = load_response.cloudaicompanion_project
+            .or(project_id);
+
+        final_project_id
+            .ok_or_else(|| anyhow!("No project ID available. Set GOOGLE_CLOUD_PROJECT environment variable."))
     }
 
     /// Get a valid access token (refreshing if needed)

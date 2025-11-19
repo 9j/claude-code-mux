@@ -90,6 +90,14 @@ pub struct ProviderConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth_provider: Option<String>,
 
+    /// Google Cloud Project ID (for Vertex AI provider)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+
+    /// Location/Region (for Vertex AI provider)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+
     pub base_url: Option<String>,
     pub models: Vec<String>,
     pub enabled: Option<bool>,

@@ -697,7 +697,25 @@
                                                 Google Gemini
                                             </div>
                                             <div class="text-sm text-gray-600">
-                                                Gemini models
+                                                Gemini models (AI Studio)
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="provider_type"
+                                            value="vertex-ai"
+                                            class="peer sr-only"
+                                        />
+                                        <div
+                                            class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-all"
+                                        >
+                                            <div class="text-xl font-bold mb-1">
+                                                Vertex AI
+                                            </div>
+                                            <div class="text-sm text-gray-600">
+                                                Gemini, Claude, Llama on GCP
                                             </div>
                                         </div>
                                     </label>
@@ -905,13 +923,155 @@
                             </div>
 
                             <!-- Step 3: Authentication -->
-                            <div class="card">
-                                <h2 class="text-2xl font-bold mb-8">
+                            <div class="card" id="auth-card">
+                                <h2
+                                    class="text-2xl font-bold mb-8"
+                                    id="auth-card-title"
+                                >
                                     Choose authentication method
                                 </h2>
 
-                                <!-- Auth Type Selector -->
-                                <div class="mb-8">
+                                <!-- Vertex AI Configuration (shown only for vertex-ai provider) -->
+                                <div id="vertex-ai-config" class="hidden">
+                                    <div
+                                        class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-4"
+                                    >
+                                        <div class="flex items-start gap-4">
+                                            <div class="text-3xl">☁️</div>
+                                            <div class="flex-1">
+                                                <h3
+                                                    class="font-bold text-lg mb-4"
+                                                >
+                                                    Google Cloud Vertex AI
+                                                    Configuration
+                                                </h3>
+
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <label class="label"
+                                                            >Project ID</label
+                                                        >
+                                                        <input
+                                                            type="text"
+                                                            id="vertex-project-id"
+                                                            name="vertex_project_id"
+                                                            class="input-field font-mono"
+                                                            placeholder="my-gcp-project"
+                                                            required
+                                                        />
+                                                        <div
+                                                            class="helper-text"
+                                                        >
+                                                            Your Google Cloud
+                                                            Project ID
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="label"
+                                                            >Location</label
+                                                        >
+                                                        <select
+                                                            id="vertex-location"
+                                                            name="vertex_location"
+                                                            class="input-field"
+                                                            required
+                                                        >
+                                                            <option
+                                                                value="us-central1"
+                                                            >
+                                                                us-central1
+                                                            </option>
+                                                            <option
+                                                                value="us-east1"
+                                                            >
+                                                                us-east1
+                                                            </option>
+                                                            <option
+                                                                value="us-east4"
+                                                            >
+                                                                us-east4
+                                                            </option>
+                                                            <option
+                                                                value="us-west1"
+                                                            >
+                                                                us-west1
+                                                            </option>
+                                                            <option
+                                                                value="us-west4"
+                                                            >
+                                                                us-west4
+                                                            </option>
+                                                            <option
+                                                                value="europe-west1"
+                                                            >
+                                                                europe-west1
+                                                            </option>
+                                                            <option
+                                                                value="europe-west2"
+                                                            >
+                                                                europe-west2
+                                                            </option>
+                                                            <option
+                                                                value="europe-west4"
+                                                            >
+                                                                europe-west4
+                                                            </option>
+                                                            <option
+                                                                value="asia-east1"
+                                                            >
+                                                                asia-east1
+                                                            </option>
+                                                            <option
+                                                                value="asia-northeast1"
+                                                            >
+                                                                asia-northeast1
+                                                            </option>
+                                                            <option
+                                                                value="asia-southeast1"
+                                                            >
+                                                                asia-southeast1
+                                                            </option>
+                                                        </select>
+                                                        <div
+                                                            class="helper-text"
+                                                        >
+                                                            Region where Vertex
+                                                            AI is enabled
+                                                        </div>
+                                                    </div>
+
+                                                    <div
+                                                        class="bg-yellow-50 border-l-4 border-yellow-400 p-3"
+                                                    >
+                                                        <p
+                                                            class="text-sm text-yellow-800"
+                                                        >
+                                                            <strong
+                                                                >ℹ️
+                                                                Authentication:</strong
+                                                            ><br />
+                                                            Vertex AI uses
+                                                            Application Default
+                                                            Credentials (ADC).
+                                                            Before starting the
+                                                            server, run:<br />
+                                                            <code
+                                                                class="bg-yellow-100 px-1 mt-1 block"
+                                                                >gcloud auth
+                                                                application-default
+                                                                login</code
+                                                            >
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Auth Type Selector (hidden for vertex-ai) -->
+                                <div class="mb-8" id="auth-type-selector">
                                     <div class="grid grid-cols-2 gap-4">
                                         <label class="cursor-pointer">
                                             <input
@@ -925,11 +1085,16 @@
                                             <div
                                                 class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-all"
                                             >
-                                                <div class="text-lg font-bold mb-1">
+                                                <div
+                                                    class="text-lg font-bold mb-1"
+                                                >
                                                     API Key
                                                 </div>
-                                                <div class="text-sm text-gray-600">
-                                                    Use your API key for authentication
+                                                <div
+                                                    class="text-sm text-gray-600"
+                                                >
+                                                    Use your API key for
+                                                    authentication
                                                 </div>
                                             </div>
                                         </label>
@@ -944,11 +1109,18 @@
                                             <div
                                                 class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-all"
                                             >
-                                                <div id="oauth-label-title" class="text-lg font-bold mb-1">
+                                                <div
+                                                    id="oauth-label-title"
+                                                    class="text-lg font-bold mb-1"
+                                                >
                                                     OAuth (Claude Pro/Max)
                                                 </div>
-                                                <div id="oauth-label-description" class="text-sm text-gray-600">
-                                                    Free for Claude Max subscribers
+                                                <div
+                                                    id="oauth-label-description"
+                                                    class="text-sm text-gray-600"
+                                                >
+                                                    Free for Claude Max
+                                                    subscribers
                                                 </div>
                                             </div>
                                         </label>
@@ -972,16 +1144,28 @@
 
                                 <!-- OAuth Section (hidden by default) -->
                                 <div id="oauth-section" class="hidden">
-                                    <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-4">
+                                    <div
+                                        class="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-4"
+                                    >
                                         <div class="flex items-start gap-4">
                                             <div class="text-3xl">🔐</div>
                                             <div class="flex-1">
-                                                <h3 class="font-bold text-lg mb-2">OAuth Authentication</h3>
+                                                <h3
+                                                    class="font-bold text-lg mb-2"
+                                                >
+                                                    OAuth Authentication
+                                                </h3>
 
                                                 <!-- Step 1: Initial state -->
                                                 <div id="oauth-step-1">
-                                                    <p id="oauth-step1-instruction" class="text-sm text-gray-700 mb-4">
-                                                        Click the button below to authenticate with your Claude Pro/Max account.
+                                                    <p
+                                                        id="oauth-step1-instruction"
+                                                        class="text-sm text-gray-700 mb-4"
+                                                    >
+                                                        Click the button below
+                                                        to authenticate with
+                                                        your Claude Pro/Max
+                                                        account.
                                                     </p>
                                                     <button
                                                         type="button"
@@ -993,32 +1177,63 @@
                                                 </div>
 
                                                 <!-- Step 2: Waiting for code -->
-                                                <div id="oauth-step-2" class="hidden">
-                                                    <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
-                                                        <p class="text-sm text-blue-900 mb-2 font-semibold">
-                                                            ✓ Authorization window opened
+                                                <div
+                                                    id="oauth-step-2"
+                                                    class="hidden"
+                                                >
+                                                    <div
+                                                        class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4"
+                                                    >
+                                                        <p
+                                                            class="text-sm text-blue-900 mb-2 font-semibold"
+                                                        >
+                                                            ✓ Authorization
+                                                            window opened
                                                         </p>
-                                                        <ol id="oauth-step2-instructions" class="text-sm text-blue-800 space-y-1 ml-4 list-decimal">
-                                                            <li>Log in to your Claude Pro/Max account</li>
-                                                            <li>Click "Allow" to authorize</li>
-                                                            <li>Copy the authorization code</li>
-                                                            <li>Paste it in the field below</li>
+                                                        <ol
+                                                            id="oauth-step2-instructions"
+                                                            class="text-sm text-blue-800 space-y-1 ml-4 list-decimal"
+                                                        >
+                                                            <li>
+                                                                Log in to your
+                                                                Claude Pro/Max
+                                                                account
+                                                            </li>
+                                                            <li>
+                                                                Click "Allow" to
+                                                                authorize
+                                                            </li>
+                                                            <li>
+                                                                Copy the
+                                                                authorization
+                                                                code
+                                                            </li>
+                                                            <li>
+                                                                Paste it in the
+                                                                field below
+                                                            </li>
                                                         </ol>
                                                     </div>
-                                                    <label class="label">Authorization Code</label>
+                                                    <label class="label"
+                                                        >Authorization
+                                                        Code</label
+                                                    >
                                                     <input
                                                         type="text"
                                                         id="oauth-code-input"
                                                         class="input-field font-mono"
                                                         placeholder="Paste the code here..."
                                                     />
-                                                    <div class="flex gap-2 mt-4">
+                                                    <div
+                                                        class="flex gap-2 mt-4"
+                                                    >
                                                         <button
                                                             type="button"
                                                             onclick="completeOAuthFlow()"
                                                             class="btn-primary flex-1"
                                                         >
-                                                            Complete Authentication
+                                                            Complete
+                                                            Authentication
                                                         </button>
                                                         <button
                                                             type="button"
@@ -1031,19 +1246,37 @@
                                                 </div>
 
                                                 <!-- Step 3: Success -->
-                                                <div id="oauth-step-3" class="hidden">
-                                                    <div class="flex items-center gap-2 text-green-600">
-                                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                <div
+                                                    id="oauth-step-3"
+                                                    class="hidden"
+                                                >
+                                                    <div
+                                                        class="flex items-center gap-2 text-green-600"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5"
+                                                            fill="currentColor"
+                                                            viewBox="0 0 20 20"
+                                                        >
+                                                            <path
+                                                                fill-rule="evenodd"
+                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                clip-rule="evenodd"
+                                                            />
                                                         </svg>
-                                                        <span class="font-semibold">OAuth token saved!</span>
+                                                        <span
+                                                            class="font-semibold"
+                                                            >OAuth token
+                                                            saved!</span
+                                                        >
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="helper-text">
-                                        For Claude Pro/Max subscribers only. Requires active subscription.
+                                        For Claude Pro/Max subscribers only.
+                                        Requires active subscription.
                                     </div>
                                 </div>
                             </div>
@@ -1449,23 +1682,36 @@
 
                         <!-- OAuth Tokens Management -->
                         <div class="card">
-                            <h2 class="text-xl font-bold mb-4">
-                                OAuth Tokens
-                            </h2>
+                            <h2 class="text-xl font-bold mb-4">OAuth Tokens</h2>
                             <p class="text-gray-600 mb-6">
-                                Manage your Claude Pro/Max OAuth authentication tokens
+                                Manage your Claude Pro/Max OAuth authentication
+                                tokens
                             </p>
                             <div id="oauth-tokens-container">
-                                <div id="oauth-tokens-loading" class="text-center py-8">
-                                    <div class="text-gray-500">Loading OAuth tokens...</div>
+                                <div
+                                    id="oauth-tokens-loading"
+                                    class="text-center py-8"
+                                >
+                                    <div class="text-gray-500">
+                                        Loading OAuth tokens...
+                                    </div>
                                 </div>
-                                <div id="oauth-tokens-list" class="space-y-4 hidden">
+                                <div
+                                    id="oauth-tokens-list"
+                                    class="space-y-4 hidden"
+                                >
                                     <!-- OAuth tokens will be rendered here -->
                                 </div>
-                                <div id="oauth-tokens-empty" class="text-center py-8 hidden">
-                                    <div class="text-gray-500 mb-4">No OAuth tokens found</div>
+                                <div
+                                    id="oauth-tokens-empty"
+                                    class="text-center py-8 hidden"
+                                >
+                                    <div class="text-gray-500 mb-4">
+                                        No OAuth tokens found
+                                    </div>
                                     <p class="text-sm text-gray-600 mb-4">
-                                        Add a provider with OAuth authentication to see tokens here
+                                        Add a provider with OAuth authentication
+                                        to see tokens here
                                     </p>
                                 </div>
                             </div>
@@ -1828,7 +2074,10 @@
             async function syncToServer() {
                 try {
                     console.log("=== Syncing to server ===");
-                    console.log("appState.config.router:", appState.config.router);
+                    console.log(
+                        "appState.config.router:",
+                        appState.config.router,
+                    );
                     console.log("Full config being sent:", appState.config);
 
                     const response = await fetch("/api/config/json", {
@@ -1960,15 +2209,26 @@
                 const config = appState.config;
 
                 // Populate router form with current values
-                const defaultSelect = document.querySelector('[name="default_model"]');
-                const thinkSelect = document.querySelector('[name="think_model"]');
-                const backgroundSelect = document.querySelector('[name="background_model"]');
-                const websearchSelect = document.querySelector('[name="websearch_model"]');
+                const defaultSelect = document.querySelector(
+                    '[name="default_model"]',
+                );
+                const thinkSelect = document.querySelector(
+                    '[name="think_model"]',
+                );
+                const backgroundSelect = document.querySelector(
+                    '[name="background_model"]',
+                );
+                const websearchSelect = document.querySelector(
+                    '[name="websearch_model"]',
+                );
 
-                if (defaultSelect) defaultSelect.value = config.router.default || "";
+                if (defaultSelect)
+                    defaultSelect.value = config.router.default || "";
                 if (thinkSelect) thinkSelect.value = config.router.think || "";
-                if (backgroundSelect) backgroundSelect.value = config.router.background || "";
-                if (websearchSelect) websearchSelect.value = config.router.websearch || "";
+                if (backgroundSelect)
+                    backgroundSelect.value = config.router.background || "";
+                if (websearchSelect)
+                    websearchSelect.value = config.router.websearch || "";
             }
 
             function loadSettingsTab() {
@@ -2017,14 +2277,14 @@
                         const providerCard = document.createElement("div");
                         providerCard.className = "card fade-in";
                         providerCard.id = `provider-card-${index}`;
-                        const authType = provider.auth_type || 'apikey';
-                        const isOAuth = authType === 'oauth';
+                        const authType = provider.auth_type || "apikey";
+                        const isOAuth = authType === "oauth";
                         const authBadge = isOAuth
                             ? '<span class="px-2 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-semibold">OAuth</span>'
                             : '<span class="px-2 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-semibold">API Key</span>';
                         const authStatus = isOAuth
-                            ? 'OAuth authenticated'
-                            : 'API key registered';
+                            ? "OAuth authenticated"
+                            : "API key registered";
 
                         providerCard.innerHTML = `
                         <div class="flex items-start justify-between">
@@ -2060,14 +2320,22 @@
                 providerCard.className = "card fade-in";
                 providerCard.id = `provider-card-${index}`;
 
-                const authType = provider.auth_type || 'apikey';
-                const isOAuth = authType === 'oauth';
-                const authBadge = isOAuth
-                    ? '<span class="px-2 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-semibold">OAuth</span>'
-                    : '<span class="px-2 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-semibold">API Key</span>';
-                const authStatus = isOAuth
-                    ? 'OAuth authenticated'
-                    : 'API key registered';
+                const isVertexAi = provider.provider_type === "vertex-ai";
+                const authType =
+                    provider.auth_type || (isVertexAi ? "vertex" : "apikey");
+                const isOAuth = authType === "oauth";
+
+                const authBadge = isVertexAi
+                    ? '<span class="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">Vertex AI</span>'
+                    : isOAuth
+                      ? '<span class="px-2 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-semibold">OAuth</span>'
+                      : '<span class="px-2 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-semibold">API Key</span>';
+
+                const authStatus = isVertexAi
+                    ? `Vertex AI (${provider.project_id || "unknown"} / ${provider.location || "unknown"})`
+                    : isOAuth
+                      ? "OAuth authenticated"
+                      : "API key registered";
 
                 providerCard.innerHTML = `
                 <div class="flex items-start justify-between">
@@ -2146,17 +2414,35 @@
                     );
                     if (providerTypeRadio) {
                         providerTypeRadio.checked = true;
+                        // Trigger updateOAuthLabel to show/hide Vertex AI config
+                        updateOAuthLabel();
                     }
 
                     form.querySelector('[name="provider_name"]').value =
                         provider.name;
-                    form.querySelector('[name="api_key"]').value =
-                        provider.api_key || "";
 
-                    const baseUrlField =
-                        form.querySelector('[name="base_url"]');
-                    if (baseUrlField && provider.base_url) {
-                        baseUrlField.value = provider.base_url;
+                    // For Vertex AI provider, fill project_id and location
+                    if (provider.provider_type === "vertex-ai") {
+                        const vertexProjectIdField =
+                            document.getElementById("vertex-project-id");
+                        const vertexLocationField =
+                            document.getElementById("vertex-location");
+                        if (vertexProjectIdField && provider.project_id) {
+                            vertexProjectIdField.value = provider.project_id;
+                        }
+                        if (vertexLocationField && provider.location) {
+                            vertexLocationField.value = provider.location;
+                        }
+                    } else {
+                        // For other providers, fill API key
+                        form.querySelector('[name="api_key"]').value =
+                            provider.api_key || "";
+
+                        const baseUrlField =
+                            form.querySelector('[name="base_url"]');
+                        if (baseUrlField && provider.base_url) {
+                            baseUrlField.value = provider.base_url;
+                        }
                     }
 
                     // Update UI labels
@@ -2769,25 +3055,38 @@
                 console.log(`Found ${inputs.length} inputs in router form`);
 
                 inputs.forEach((input, index) => {
-                    console.log(`Setting up listener for input ${index}:`, input.name, input.tagName);
+                    console.log(
+                        `Setting up listener for input ${index}:`,
+                        input.name,
+                        input.tagName,
+                    );
                     input.addEventListener("change", (e) => {
-                        console.log("=== Change event fired ===", e.target.name, "=", e.target.value);
+                        console.log(
+                            "=== Change event fired ===",
+                            e.target.name,
+                            "=",
+                            e.target.value,
+                        );
                         debounce(
                             "router",
                             () => {
-                                console.log("=== Router form change detected (after debounce) ===");
+                                console.log(
+                                    "=== Router form change detected (after debounce) ===",
+                                );
                                 const formData = new FormData(routerForm);
                                 const defaultModel =
                                     formData.get("default_model");
                                 const thinkModel = formData.get("think_model");
-                                const backgroundModel = formData.get("background_model");
-                                const websearchModel = formData.get("websearch_model");
+                                const backgroundModel =
+                                    formData.get("background_model");
+                                const websearchModel =
+                                    formData.get("websearch_model");
 
                                 console.log("FormData values:", {
                                     default: defaultModel,
                                     think: thinkModel,
                                     background: backgroundModel,
-                                    websearch: websearchModel
+                                    websearch: websearchModel,
                                 });
 
                                 if (!defaultModel) return; // Skip if required field is empty
@@ -2815,7 +3114,10 @@
                                     delete appState.config.router.websearch;
                                 }
 
-                                console.log("Updated appState.config.router:", appState.config.router);
+                                console.log(
+                                    "Updated appState.config.router:",
+                                    appState.config.router,
+                                );
 
                                 // Save to localStorage only
                                 saveToLocalStorage(appState.config);
@@ -2995,7 +3297,8 @@
                     const formData = new FormData(e.target);
                     const providerName = formData.get("provider_name")?.trim();
                     const providerType = formData.get("provider_type")?.trim();
-                    const authType = formData.get("auth_type")?.trim() || "apikey";
+                    const authType =
+                        formData.get("auth_type")?.trim() || "apikey";
                     const apiKey = formData.get("api_key")?.trim();
                     const baseUrl = formData.get("base_url")?.trim();
 
@@ -3010,37 +3313,81 @@
                         return;
                     }
 
+                    // For Vertex AI, validate project_id and location
+                    if (providerType === "vertex-ai") {
+                        const vertexProjectId = formData
+                            .get("vertex_project_id")
+                            ?.trim();
+                        const vertexLocation = formData
+                            .get("vertex_location")
+                            ?.trim();
+
+                        if (!vertexProjectId) {
+                            notifyError(
+                                "Please enter a Google Cloud Project ID for Vertex AI.",
+                            );
+                            return;
+                        }
+                        if (!vertexLocation) {
+                            notifyError(
+                                "Please select a location for Vertex AI.",
+                            );
+                            return;
+                        }
+                    }
+
                     // For API key auth, require API key
-                    if (authType === "apikey" && !apiKey) {
+                    if (
+                        authType === "apikey" &&
+                        !apiKey &&
+                        providerType !== "vertex-ai"
+                    ) {
                         notifyError("Please enter an API key.");
                         return;
                     }
 
                     // For OAuth, check if token was saved
-                    const oauthProviderId = sessionStorage.getItem('oauth_provider_id');
+                    const oauthProviderId =
+                        sessionStorage.getItem("oauth_provider_id");
                     if (authType === "oauth" && !oauthProviderId) {
-                        notifyError("Please complete OAuth authentication first.");
+                        notifyError(
+                            "Please complete OAuth authentication first.",
+                        );
                         return;
                     }
 
                     const providerData = {
                         name: providerName,
                         provider_type: providerType,
-                        auth_type: authType,
                         models: [], // Empty array - models are defined in model mappings
                         enabled: true,
                     };
 
-                    // Add auth-specific fields
-                    if (authType === "oauth") {
-                        providerData.oauth_provider = oauthProviderId;
-                        // For OAuth, api_key is optional (not used)
+                    // Add provider-specific fields
+                    if (providerType === "vertex-ai") {
+                        // Vertex AI provider
+                        providerData.project_id = formData
+                            .get("vertex_project_id")
+                            ?.trim();
+                        providerData.location = formData
+                            .get("vertex_location")
+                            ?.trim();
+                        // No auth_type needed for Vertex AI (uses ADC)
                     } else {
-                        providerData.api_key = apiKey;
-                    }
+                        // Other providers with auth_type
+                        providerData.auth_type = authType;
 
-                    if (baseUrl) {
-                        providerData.base_url = baseUrl;
+                        // Add auth-specific fields
+                        if (authType === "oauth") {
+                            providerData.oauth_provider = oauthProviderId;
+                            // For OAuth, api_key is optional (not used)
+                        } else {
+                            providerData.api_key = apiKey;
+                        }
+
+                        if (baseUrl) {
+                            providerData.base_url = baseUrl;
+                        }
                     }
 
                     try {
@@ -3468,26 +3815,57 @@
 
             // OAuth Functions
             function updateOAuthLabel() {
-                const providerType = document.querySelector('input[name="provider_type"]:checked')?.value;
-                const oauthLabel = document.getElementById('oauth-label-title');
-                const oauthDescription = document.getElementById('oauth-label-description');
-                const step1Instruction = document.getElementById('oauth-step1-instruction');
-                const step2Instructions = document.getElementById('oauth-step2-instructions');
+                const providerType = document.querySelector(
+                    'input[name="provider_type"]:checked',
+                )?.value;
+                const oauthLabel = document.getElementById("oauth-label-title");
+                const oauthDescription = document.getElementById(
+                    "oauth-label-description",
+                );
+                const step1Instruction = document.getElementById(
+                    "oauth-step1-instruction",
+                );
+                const step2Instructions = document.getElementById(
+                    "oauth-step2-instructions",
+                );
 
-                if (providerType === 'openai') {
-                    oauthLabel.textContent = 'OAuth (ChatGPT Plus/Pro)';
-                    oauthDescription.textContent = 'Free for ChatGPT Plus/Pro subscribers';
-                    step1Instruction.textContent = 'Click the button below to authenticate with your ChatGPT Plus/Pro account.';
+                const vertexAiConfig =
+                    document.getElementById("vertex-ai-config");
+                const authTypeSelector =
+                    document.getElementById("auth-type-selector");
+                const authCardTitle =
+                    document.getElementById("auth-card-title");
+
+                // Show/hide Vertex AI config based on provider type
+                if (providerType === "vertex-ai") {
+                    vertexAiConfig.classList.remove("hidden");
+                    authTypeSelector.classList.add("hidden");
+                    authCardTitle.textContent = "Vertex AI Configuration";
+                    return; // Skip OAuth label updates
+                } else {
+                    vertexAiConfig.classList.add("hidden");
+                    authTypeSelector.classList.remove("hidden");
+                    authCardTitle.textContent = "Choose authentication method";
+                }
+
+                if (providerType === "openai") {
+                    oauthLabel.textContent = "OAuth (ChatGPT Plus/Pro)";
+                    oauthDescription.textContent =
+                        "Free for ChatGPT Plus/Pro subscribers";
+                    step1Instruction.textContent =
+                        "Click the button below to authenticate with your ChatGPT Plus/Pro account.";
                     step2Instructions.innerHTML = `
                         <li>Log in to your ChatGPT Plus/Pro account</li>
                         <li>Click "Allow" to authorize</li>
                         <li>Copy the authorization code</li>
                         <li>Paste it in the field below</li>
                     `;
-                } else if (providerType === 'gemini') {
-                    oauthLabel.textContent = 'OAuth (Google AI Pro/Ultra)';
-                    oauthDescription.textContent = 'Free for Google AI Pro/Ultra subscribers';
-                    step1Instruction.textContent = 'Click the button below to authenticate with your Google account (AI Pro/Ultra).';
+                } else if (providerType === "gemini") {
+                    oauthLabel.textContent = "OAuth (Google AI Pro/Ultra)";
+                    oauthDescription.textContent =
+                        "Free for Google AI Pro/Ultra subscribers";
+                    step1Instruction.textContent =
+                        "Click the button below to authenticate with your Google account (AI Pro/Ultra).";
                     step2Instructions.innerHTML = `
                         <li>Log in to your Google account</li>
                         <li>Click "Allow" to authorize</li>
@@ -3495,9 +3873,11 @@
                         <li>Paste it in the field below</li>
                     `;
                 } else {
-                    oauthLabel.textContent = 'OAuth (Claude Pro/Max)';
-                    oauthDescription.textContent = 'Free for Claude Max subscribers';
-                    step1Instruction.textContent = 'Click the button below to authenticate with your Claude Pro/Max account.';
+                    oauthLabel.textContent = "OAuth (Claude Pro/Max)";
+                    oauthDescription.textContent =
+                        "Free for Claude Max subscribers";
+                    step1Instruction.textContent =
+                        "Click the button below to authenticate with your Claude Pro/Max account.";
                     step2Instructions.innerHTML = `
                         <li>Log in to your Claude Pro/Max account</li>
                         <li>Click "Allow" to authorize</li>
@@ -3508,59 +3888,71 @@
             }
 
             function toggleAuthMethod() {
-                const authType = document.querySelector('input[name="auth_type"]:checked').value;
-                const apiKeySection = document.getElementById('api-key-section');
-                const oauthSection = document.getElementById('oauth-section');
-                const apiKeyInput = document.getElementById('api-key-input');
+                const authType = document.querySelector(
+                    'input[name="auth_type"]:checked',
+                ).value;
+                const apiKeySection =
+                    document.getElementById("api-key-section");
+                const oauthSection = document.getElementById("oauth-section");
+                const apiKeyInput = document.getElementById("api-key-input");
 
-                if (authType === 'oauth') {
-                    apiKeySection.classList.add('hidden');
-                    oauthSection.classList.remove('hidden');
-                    apiKeyInput.removeAttribute('required');
+                if (authType === "oauth") {
+                    apiKeySection.classList.add("hidden");
+                    oauthSection.classList.remove("hidden");
+                    apiKeyInput.removeAttribute("required");
 
                     // Reset OAuth UI to step 1
-                    document.getElementById('oauth-step-1').classList.remove('hidden');
-                    document.getElementById('oauth-step-2').classList.add('hidden');
-                    document.getElementById('oauth-step-3').classList.add('hidden');
-                    document.getElementById('oauth-code-input').value = '';
+                    document
+                        .getElementById("oauth-step-1")
+                        .classList.remove("hidden");
+                    document
+                        .getElementById("oauth-step-2")
+                        .classList.add("hidden");
+                    document
+                        .getElementById("oauth-step-3")
+                        .classList.add("hidden");
+                    document.getElementById("oauth-code-input").value = "";
                 } else {
-                    apiKeySection.classList.remove('hidden');
-                    oauthSection.classList.add('hidden');
-                    apiKeyInput.setAttribute('required', 'required');
+                    apiKeySection.classList.remove("hidden");
+                    oauthSection.classList.add("hidden");
+                    apiKeyInput.setAttribute("required", "required");
                 }
             }
 
             async function loadOAuthTokens() {
-                const loadingEl = document.getElementById('oauth-tokens-loading');
-                const listEl = document.getElementById('oauth-tokens-list');
-                const emptyEl = document.getElementById('oauth-tokens-empty');
+                const loadingEl = document.getElementById(
+                    "oauth-tokens-loading",
+                );
+                const listEl = document.getElementById("oauth-tokens-list");
+                const emptyEl = document.getElementById("oauth-tokens-empty");
 
                 try {
-                    const response = await fetch('/api/oauth/tokens');
+                    const response = await fetch("/api/oauth/tokens");
                     if (!response.ok) {
-                        throw new Error('Failed to load OAuth tokens');
+                        throw new Error("Failed to load OAuth tokens");
                     }
 
                     const tokens = await response.json();
 
-                    loadingEl.classList.add('hidden');
+                    loadingEl.classList.add("hidden");
 
                     if (tokens.length === 0) {
-                        emptyEl.classList.remove('hidden');
-                        listEl.classList.add('hidden');
+                        emptyEl.classList.remove("hidden");
+                        listEl.classList.add("hidden");
                     } else {
-                        emptyEl.classList.add('hidden');
-                        listEl.classList.remove('hidden');
+                        emptyEl.classList.add("hidden");
+                        listEl.classList.remove("hidden");
 
                         // Render tokens
-                        listEl.innerHTML = tokens.map(token => {
-                            const expiresAt = new Date(token.expires_at);
-                            const now = new Date();
-                            const isExpired = expiresAt <= now;
-                            const needsRefresh = token.needs_refresh;
+                        listEl.innerHTML = tokens
+                            .map((token) => {
+                                const expiresAt = new Date(token.expires_at);
+                                const now = new Date();
+                                const isExpired = expiresAt <= now;
+                                const needsRefresh = token.needs_refresh;
 
-                            return `
-                                <div class="border-2 ${isExpired ? 'border-red-200 bg-red-50' : needsRefresh ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'} rounded-xl p-4">
+                                return `
+                                <div class="border-2 ${isExpired ? "border-red-200 bg-red-50" : needsRefresh ? "border-yellow-200 bg-yellow-50" : "border-green-200 bg-green-50"} rounded-xl p-4">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
                                             <div class="flex items-center gap-2 mb-2">
@@ -3588,54 +3980,60 @@
                                     </div>
                                 </div>
                             `;
-                        }).join('');
+                            })
+                            .join("");
                     }
                 } catch (error) {
-                    console.error('Failed to load OAuth tokens:', error);
-                    loadingEl.innerHTML = '<div class="text-red-600">Failed to load OAuth tokens</div>';
+                    console.error("Failed to load OAuth tokens:", error);
+                    loadingEl.innerHTML =
+                        '<div class="text-red-600">Failed to load OAuth tokens</div>';
                 }
             }
 
             async function refreshOAuthToken(providerId) {
                 try {
-                    const response = await fetch('/api/oauth/tokens/refresh', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ provider_id: providerId })
+                    const response = await fetch("/api/oauth/tokens/refresh", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider_id: providerId }),
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to refresh token');
+                        throw new Error("Failed to refresh token");
                     }
 
                     notifySuccess(`Token refreshed for ${providerId}`);
                     await loadOAuthTokens(); // Reload tokens list
                 } catch (error) {
-                    console.error('Failed to refresh token:', error);
+                    console.error("Failed to refresh token:", error);
                     notifyError(`Failed to refresh token: ${error.message}`);
                 }
             }
 
             async function deleteOAuthToken(providerId) {
-                if (!confirm(`Are you sure you want to delete the OAuth token for "${providerId}"?`)) {
+                if (
+                    !confirm(
+                        `Are you sure you want to delete the OAuth token for "${providerId}"?`,
+                    )
+                ) {
                     return;
                 }
 
                 try {
-                    const response = await fetch('/api/oauth/tokens/delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ provider_id: providerId })
+                    const response = await fetch("/api/oauth/tokens/delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider_id: providerId }),
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to delete token');
+                        throw new Error("Failed to delete token");
                     }
 
                     notifySuccess(`OAuth token deleted for ${providerId}`);
                     await loadOAuthTokens(); // Reload tokens list
                 } catch (error) {
-                    console.error('Failed to delete token:', error);
+                    console.error("Failed to delete token:", error);
                     notifyError(`Failed to delete token: ${error.message}`);
                 }
             }
@@ -3643,86 +4041,155 @@
             async function startOAuthFlow() {
                 try {
                     // Determine oauth_type based on provider type
-                    const providerType = document.querySelector('input[name="provider_type"]:checked')?.value;
-                    let oauth_type = 'max'; // default to anthropic max
+                    const providerType = document.querySelector(
+                        'input[name="provider_type"]:checked',
+                    )?.value;
+                    let oauth_type = "max"; // default to anthropic max
 
-                    if (providerType === 'openai') {
-                        oauth_type = 'openai-codex';
-                    } else if (providerType === 'gemini') {
-                        oauth_type = 'gemini';
+                    if (providerType === "openai") {
+                        oauth_type = "openai-codex";
+                    } else if (providerType === "gemini") {
+                        oauth_type = "gemini";
+                    }
+
+                    // Update instruction text based on provider type
+                    const instructionEl = document.getElementById(
+                        "oauth-step1-instruction",
+                    );
+                    if (providerType === "gemini") {
+                        instructionEl.innerHTML = `
+                            <p class="mb-2">Click the button below to authenticate with your Google account.</p>
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mt-2">
+                                <p class="text-sm text-yellow-800">
+                                    <strong>ℹ️ Google Cloud Project ID:</strong><br>
+                                    • <strong>Individual accounts</strong>: No project ID needed<br>
+                                    • <strong>Workspace/licensed users</strong>: Set <code class="bg-yellow-100 px-1">GOOGLE_CLOUD_PROJECT</code> environment variable before starting server
+                                </p>
+                            </div>
+                        `;
                     }
 
                     // Step 1: Get authorization URL
-                    const response = await fetch('/api/oauth/authorize', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ oauth_type })
+                    const response = await fetch("/api/oauth/authorize", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ oauth_type }),
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to get authorization URL');
+                        throw new Error("Failed to get authorization URL");
                     }
 
                     const data = await response.json();
                     const { url, verifier } = data;
 
                     // Store verifier and oauth_type for later use
-                    console.log('🔐 Storing OAuth verifier:', verifier);
-                    console.log('🔐 Storing OAuth type:', oauth_type);
-                    sessionStorage.setItem('oauth_verifier', verifier);
-                    sessionStorage.setItem('oauth_type', oauth_type);
+                    console.log("🔐 Storing OAuth verifier:", verifier);
+                    console.log("🔐 Storing OAuth type:", oauth_type);
+                    sessionStorage.setItem("oauth_verifier", verifier);
+                    sessionStorage.setItem("oauth_type", oauth_type);
 
                     // Step 2: Open authorization URL in new window
-                    window.open(url, 'OAuth Authorization', 'width=600,height=800');
+                    window.open(
+                        url,
+                        "OAuth Authorization",
+                        "width=600,height=800",
+                    );
+
+                    // Update step 2 instructions based on provider type
+                    const step2InstructionsEl = document.getElementById(
+                        "oauth-step2-instructions",
+                    );
+                    if (providerType === "gemini") {
+                        step2InstructionsEl.innerHTML = `
+                            <li>Log in to your Google account</li>
+                            <li>Click "Allow" to authorize</li>
+                            <li>Copy the authorization code</li>
+                            <li>Paste it in the field below</li>
+                        `;
+                    } else if (providerType === "openai") {
+                        step2InstructionsEl.innerHTML = `
+                            <li>Log in to your ChatGPT Plus/Pro account</li>
+                            <li>Click "Allow" to authorize</li>
+                            <li>Copy the authorization code</li>
+                            <li>Paste it in the field below</li>
+                        `;
+                    } else {
+                        step2InstructionsEl.innerHTML = `
+                            <li>Log in to your Claude Pro/Max account</li>
+                            <li>Click "Allow" to authorize</li>
+                            <li>Copy the authorization code</li>
+                            <li>Paste it in the field below</li>
+                        `;
+                    }
 
                     // Step 3: Show code input UI
-                    document.getElementById('oauth-step-1').classList.add('hidden');
-                    document.getElementById('oauth-step-2').classList.remove('hidden');
+                    document
+                        .getElementById("oauth-step-1")
+                        .classList.add("hidden");
+                    document
+                        .getElementById("oauth-step-2")
+                        .classList.remove("hidden");
 
-                    notifySuccess('Authorization window opened. Please complete authentication and paste the code.');
-
+                    notifySuccess(
+                        "Authorization window opened. Please complete authentication and paste the code.",
+                    );
                 } catch (error) {
-                    console.error('OAuth flow error:', error);
+                    console.error("OAuth flow error:", error);
                     notifyError(`Failed to start OAuth: ${error.message}`);
                 }
             }
 
             async function completeOAuthFlow() {
                 try {
-                    const code = document.getElementById('oauth-code-input').value.trim();
+                    const code = document
+                        .getElementById("oauth-code-input")
+                        .value.trim();
 
                     if (!code) {
-                        notifyError('Please paste the authorization code');
+                        notifyError("Please paste the authorization code");
                         return;
                     }
 
-                    const verifier = sessionStorage.getItem('oauth_verifier');
+                    const verifier = sessionStorage.getItem("oauth_verifier");
                     if (!verifier) {
-                        throw new Error('OAuth verifier not found. Please start the flow again.');
+                        throw new Error(
+                            "OAuth verifier not found. Please start the flow again.",
+                        );
                     }
 
-                    const oauthType = sessionStorage.getItem('oauth_type');
+                    const oauthType = sessionStorage.getItem("oauth_type");
                     if (!oauthType) {
-                        throw new Error('OAuth type not found. Please start the flow again.');
+                        throw new Error(
+                            "OAuth type not found. Please start the flow again.",
+                        );
                     }
 
                     // Exchange code for tokens
-                    const providerName = document.querySelector('input[name="provider_name"]').value || 'claude-max';
+                    const providerName =
+                        document.querySelector('input[name="provider_name"]')
+                            .value || "claude-max";
                     const providerId = `${providerName}-oauth`;
 
-                    console.log('🔐 Exchanging code with oauth_type:', oauthType);
-                    console.log('🔐 Provider ID:', providerId);
+                    console.log(
+                        "🔐 Exchanging code with oauth_type:",
+                        oauthType,
+                    );
+                    console.log("🔐 Provider ID:", providerId);
 
-                    const exchangeResponse = await fetch('/api/oauth/exchange', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            code: code,
-                            verifier: verifier,
-                            provider_id: providerId,
-                            oauth_type: oauthType
-                        })
-                    });
+                    const exchangeResponse = await fetch(
+                        "/api/oauth/exchange",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                code: code,
+                                verifier: verifier,
+                                provider_id: providerId,
+                                oauth_type: oauthType,
+                            }),
+                        },
+                    );
 
                     if (!exchangeResponse.ok) {
                         const error = await exchangeResponse.text();
@@ -3732,25 +4199,32 @@
                     const tokenData = await exchangeResponse.json();
 
                     // Show success
-                    document.getElementById('oauth-step-2').classList.add('hidden');
-                    document.getElementById('oauth-step-3').classList.remove('hidden');
-                    sessionStorage.setItem('oauth_provider_id', providerId);
+                    document
+                        .getElementById("oauth-step-2")
+                        .classList.add("hidden");
+                    document
+                        .getElementById("oauth-step-3")
+                        .classList.remove("hidden");
+                    sessionStorage.setItem("oauth_provider_id", providerId);
 
-                    notifySuccess(`OAuth authentication successful! Token saved for ${providerId}`);
-
+                    notifySuccess(
+                        `OAuth authentication successful! Token saved for ${providerId}`,
+                    );
                 } catch (error) {
-                    console.error('OAuth completion error:', error);
+                    console.error("OAuth completion error:", error);
                     notifyError(`Authentication failed: ${error.message}`);
                 }
             }
 
             function cancelOAuthFlow() {
                 // Reset to initial state
-                document.getElementById('oauth-step-2').classList.add('hidden');
-                document.getElementById('oauth-step-1').classList.remove('hidden');
-                document.getElementById('oauth-code-input').value = '';
-                sessionStorage.removeItem('oauth_verifier');
-                notifySuccess('OAuth flow canceled');
+                document.getElementById("oauth-step-2").classList.add("hidden");
+                document
+                    .getElementById("oauth-step-1")
+                    .classList.remove("hidden");
+                document.getElementById("oauth-code-input").value = "";
+                sessionStorage.removeItem("oauth_verifier");
+                notifySuccess("OAuth flow canceled");
             }
 
             // Initialize
@@ -3764,9 +4238,11 @@
                 setupSettingsAutoSave();
 
                 // Setup provider type change listeners to update OAuth label
-                const providerTypeInputs = document.querySelectorAll('input[name="provider_type"]');
-                providerTypeInputs.forEach(input => {
-                    input.addEventListener('change', updateOAuthLabel);
+                const providerTypeInputs = document.querySelectorAll(
+                    'input[name="provider_type"]',
+                );
+                providerTypeInputs.forEach((input) => {
+                    input.addEventListener("change", updateOAuthLabel);
                 });
 
                 // Initialize OAuth label based on current selection
