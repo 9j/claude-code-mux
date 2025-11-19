@@ -43,6 +43,7 @@ pub struct AuthorizationUrl {
 #[derive(Debug, Clone)]
 pub struct OAuthConfig {
     pub client_id: String,
+    pub client_secret: Option<String>,  // Some providers require client_secret (e.g., Google)
     pub auth_url: String,
     pub token_url: String,
     pub redirect_uri: String,
@@ -54,6 +55,7 @@ impl OAuthConfig {
     pub fn anthropic() -> Self {
         Self {
             client_id: "9d1c250a-e61b-44d9-88ed-5944d1962f5e".to_string(),
+            client_secret: None,  // PKCE-based public client
             auth_url: "https://claude.ai/oauth/authorize".to_string(),
             token_url: "https://console.anthropic.com/v1/oauth/token".to_string(),
             redirect_uri: "https://console.anthropic.com/oauth/code/callback".to_string(),
@@ -82,6 +84,7 @@ impl OAuthConfig {
     pub fn openai_codex() -> Self {
         Self {
             client_id: "app_EMoamEEZ73f0CkXaXp7hrann".to_string(),
+            client_secret: None,  // PKCE-based public client
             auth_url: "https://auth.openai.com/oauth/authorize".to_string(),
             token_url: "https://auth.openai.com/oauth/token".to_string(),
             redirect_uri: "http://localhost:1455/auth/callback".to_string(),
@@ -90,6 +93,28 @@ impl OAuthConfig {
                 "profile".to_string(),
                 "email".to_string(),
                 "offline_access".to_string(),
+            ],
+        }
+    }
+
+    /// Google Gemini (AI Pro/Ultra) OAuth configuration
+    ///
+    /// Note: This uses Google's official Gemini CLI OAuth app credentials.
+    /// The client_id and client_secret are public (as documented in Google's official CLI).
+    /// See: https://github.com/google-gemini/gemini-cli
+    /// "It's ok to save this in git because this is an installed application"
+    /// https://developers.google.com/identity/protocols/oauth2#installed
+    pub fn gemini() -> Self {
+        Self {
+            client_id: "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com".to_string(),
+            client_secret: Some("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".to_string()),
+            auth_url: "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
+            token_url: "https://oauth2.googleapis.com/token".to_string(),
+            redirect_uri: "http://localhost:13456/api/oauth/callback".to_string(),
+            scopes: vec![
+                "https://www.googleapis.com/auth/cloud-platform".to_string(),
+                "https://www.googleapis.com/auth/userinfo.email".to_string(),
+                "https://www.googleapis.com/auth/userinfo.profile".to_string(),
             ],
         }
     }
