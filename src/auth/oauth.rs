@@ -144,8 +144,9 @@ impl OAuthClient {
         let mut url = url::Url::parse(&self.config.auth_url)
             .expect("Invalid auth URL");
 
-        // Check if this is OpenAI Codex (based on client_id)
+        // Check provider type based on client_id
         let is_openai_codex = self.config.client_id == "app_EMoamEEZ73f0CkXaXp7hrann";
+        let is_gemini = self.config.client_id.starts_with("681255809395-");
 
         if is_openai_codex {
             // OpenAI uses a separate random state (not the PKCE verifier)
@@ -168,10 +169,22 @@ impl OAuthClient {
                 .append_pair("id_token_add_organizations", "true")
                 .append_pair("codex_cli_simplified_flow", "true")
                 .append_pair("originator", "codex_cli_rs");
+        } else if is_gemini {
+            // Google OAuth uses standard OAuth 2.0 with PKCE
+            url.query_pairs_mut()
+                .append_pair("response_type", "code")
+                .append_pair("client_id", &self.config.client_id)
+                .append_pair("redirect_uri", &self.config.redirect_uri)
+                .append_pair("scope", &self.config.scopes.join(" "))
+                .append_pair("code_challenge", &pkce.challenge)
+                .append_pair("code_challenge_method", "S256")
+                .append_pair("state", &pkce.verifier)  // Use verifier as state
+                .append_pair("access_type", "offline")  // Request refresh token
+                .append_pair("prompt", "consent");  // Force consent screen
         } else {
             // Anthropic specific parameters (uses verifier as state)
             url.query_pairs_mut()
-                .append_pair("code", "true")
+                .append_pair("code", "true")  // Anthropic-specific non-standard parameter
                 .append_pair("client_id", &self.config.client_id)
                 .append_pair("response_type", "code")
                 .append_pair("redirect_uri", &self.config.redirect_uri)
